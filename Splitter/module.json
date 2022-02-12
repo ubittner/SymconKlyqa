@@ -1,0 +1,18 @@
+{
+  "id": "{D71BFBAE-AD9F-00C1-1C83-BFD49EB41D2C}",
+  "name": "Klyqa Splitter",
+  "type": 2,
+  "vendor": "Klyqa",
+  "aliases": [
+    "Klyqa Splitter"
+  ],
+  "url": "https://github.com/ubittner/SymconKlyqa/Splitter",
+  "parentRequirements": [],
+  "childRequirements": [
+    "{0AE482A0-8497-D213-7519-7076837B3313}"
+  ],
+  "implemented": [
+    "{8F385BA9-23F8-2969-19F8-0E04ABD77E5B}"
+  ],
+  "prefix": "KLYQA"
+}

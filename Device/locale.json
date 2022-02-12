@@ -1,0 +1,26 @@
+{
+  "translations": {
+    "de": {
+      "Klyqa Device": "Klyqa Gerät",
+      "Cloud Device ID": "Cloud Geräte ID",
+      "Device Name": "Gerätename",
+      "Switching profile": "Schaltprofil",
+      "Please select": "Bitte auswählen",
+      "Room": "Raum",
+      "Group": "Gruppe",
+      "Device RGB-CW-WW": "Gerät RGB-CW-WW",
+      "Device CW-WW": "Gerät CW-WW",
+      "Update interval": "Aktualisierungsintervall",
+      "seconds": "Sekunden",
+      "Developer area": "Entwicklerbereich",
+      "Update Device State": "Gerätestatus aktualisieren",
+      "Klyqa Device will be created": "Klyqa Gerät wird erstellt",
+      "Klyqa Device is active": "Klyqa Gerät ist aktiv",
+      "Klyqa Device will be deleted": "Klyqa Gerät wird gelöscht",
+      "Klyqa Device is inactive": "Klyqa Gerät ist inaktiv",
+      "An error has occurred, for further information see messages, log file or debug!": "Es ist Fehler aufgetreten, weitere Informationen unter Meldungen, im Log oder Debug!",
+      "Light": "Lampe",
+      "Brightness": "Helligkeit"
+    }
+  }
+}

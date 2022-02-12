@@ -1,0 +1,26 @@
+{
+  "translations": {
+    "de": {
+      "Active": "Aktiv",
+      "Please enter your e-mail address and your password for your Klyqa account": "Bitte geben Sie Ihre E-Mail-Adresse und Ihr Passwort für Ihr Klyqa-Konto an",
+      "E-Mail Address": "E-Mail Adresse",
+      "Password": "Kennwort",
+      "milliseconds": "Millisekunden",
+      "Account token: Not registered yet!": "Account token: Noch nicht registriert!",
+      "Access token: Not registered yet!": "Access token: Noch nicht registriert!",
+      "Developer area": "Entwicklerbereich",
+      "Adopt Access Token": "Access Token übernehmen",
+      "Delete Access Token": "Access Token löschen",
+      "Klyqa Splitter will be created": "Klyqa Splitter wird erstellt",
+      "Klyqa Splitter is active": "Klyqa Splitter ist aktiv",
+      "Klyqa Splitter will be deleted": "Klyqa Splitter wird gelöscht",
+      "Klyqa Splitter is inactive": "Klyqa Splitter ist inaktiv",
+      "An error has occurred, for further information see messages, log file or debug!": "Es ist Fehler aufgetreten, weitere Informationen unter Meldungen, im Log oder Debug!",
+      "Please enter your credentials!": "Bitte geben Sie Ihre Zugangsdaten an!",
+      "Please enter your E-Mail address!": "Bitte geben Sie Ihre E-Mail Adresse an!",
+      "Please enter your password!": "Bitte geben Sie Ihre Kennwort an!",
+      "Check credentials. Token is missing or invalid!": "Bitte Anmeldedaten prüfen. Fehlender oder ungültiger Token!",
+      "Instance is inactive!": "Instanz ist inaktiv!"
+    }
+  }
+}

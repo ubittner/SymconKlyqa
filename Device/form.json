@@ -1,0 +1,103 @@
+{
+  "elements": [
+    {
+      "type": "Image",
+      "image": "data:image/png;base64, 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"
+    },
+    {
+      "type": "Label",
+      "caption": "Klyqa Device"
+    },
+    {
+      "type": "Label",
+      "caption": "Version:"
+    },
+    {
+      "type": "Label",
+      "caption": " "
+    },
+    {
+      "type": "ValidationTextBox",
+      "name": "CloudDeviceID",
+      "caption": "Cloud Device ID",
+      "width": "600px"
+    },
+    {
+      "type": "ValidationTextBox",
+      "name": "DeviceName",
+      "caption": "Device Name"
+    },
+    {
+      "type": "Select",
+      "name": "SwitchingProfile",
+      "caption": "Switching profile",
+      "options": [
+        {
+          "caption": "Please select",
+          "value": 0
+        },
+        {
+          "caption": "Device RGB-CW-WW",
+          "value": 1
+        },
+        {
+          "caption": "Device CW-WW",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "type": "NumberSpinner",
+      "name": "UpdateInterval",
+      "caption": "Update interval",
+      "suffix": "seconds"
+    }
+  ],
+  "actions": [
+    {
+      "type": "ExpansionPanel",
+      "caption": "Developer area",
+      "items": [
+        {
+          "type": "Button",
+          "caption": "Update Device State",
+          "onClick": "KLYQADEV_UpdateDeviceState($id);"
+        },
+        {
+          "type": "Label",
+          "caption": " "
+        },
+        {
+          "type": "TestCenter"
+        }
+      ]
+    }
+  ],
+  "status": [
+    {
+      "code": 101,
+      "icon": "active",
+      "caption": "Klyqa Device will be created"
+    },
+    {
+      "code": 102,
+      "icon": "active",
+      "caption": "Klyqa Device is active"
+    },
+    {
+      "code": 103,
+      "icon": "active",
+      "caption": "Klyqa Device will be deleted"
+    },
+    {
+      "code": 104,
+      "icon": "inactive",
+      "caption": "Klyqa Device is inactive"
+    },
+    {
+      "code": 200,
+      "icon": "inactive",
+      "caption": "An error has occurred, for further information see messages, log file or debug!"
+    }
+  ]
+}

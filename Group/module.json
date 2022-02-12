@@ -1,0 +1,18 @@
+{
+  "id": "{C1A5757A-F7CF-6976-E794-940D2887D78F}",
+  "name": "Klyqa Group",
+  "type": 3,
+  "vendor": "Klyqa",
+  "aliases": [
+    "Klyqa Gruppe"
+  ],
+  "url": "https://github.com/ubittner/SymconKlyqa/Group",
+  "parentRequirements": [
+    "{8F385BA9-23F8-2969-19F8-0E04ABD77E5B}"
+  ],
+  "childRequirements": [],
+  "implemented": [
+    "{0AE482A0-8497-D213-7519-7076837B3313}"
+  ],
+  "prefix": "KLYQAGRP"
+}

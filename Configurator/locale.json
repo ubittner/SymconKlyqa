@@ -1,0 +1,16 @@
+{
+  "translations": {
+    "de": {
+      "Klyqa Configurator": "Klyqa Konfigurator",
+      "Please select a category": "Bitte wählen Sie eine Kategorie aus",
+      "Category": "Kategorie",
+      "Product": "Produkt",
+      "Devices": "Geräte",
+      "Unknown": "Unbekannt",
+      "Device": "Gerät",
+      "Groups": "Gruppen",
+      "Room": "Raum",
+      "Group": "Gruppe"
+    }
+  }
+}

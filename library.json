@@ -1,0 +1,12 @@
+{
+  "id": "{243E0FEF-A7D1-6126-149E-ACE89A5D3F69}",
+  "author": "Ulrich Bittner",
+  "name": "Klyqa",
+  "url": "https://github.com/ubittner/SymconKlyqa",
+  "compatibility": {
+    "version": "6.0"
+  },
+  "version": "1.0",
+  "build": 1,
+  "date": 1644652008
+}

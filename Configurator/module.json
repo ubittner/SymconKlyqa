@@ -1,0 +1,18 @@
+{
+  "id": "{B1581638-7746-BA39-AC1D-EEB1ED2CC117}",
+  "name": "Klyqa Configurator",
+  "type": 4,
+  "vendor": "Klyqa",
+  "aliases": [
+    "Klyqa Konfigurator"
+  ],
+  "url": "https://github.com/ubittner/SymconKlyqa/Configurator",
+  "parentRequirements": [
+    "{8F385BA9-23F8-2969-19F8-0E04ABD77E5B}"
+  ],
+  "childRequirements": [],
+  "implemented": [
+    "{0AE482A0-8497-D213-7519-7076837B3313}"
+  ],
+  "prefix": "KLYQA"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "{9BC6DF5F-FE71-B3FA-3234-B83329C6EF7D}",
+  "name": "Klyqa Device",
+  "type": 3,
+  "vendor": "Klyqa",
+  "aliases": [
+    "Klyqa Gerät"
+  ],
+  "url": "https://github.com/ubittner/SymconKlyqa/Device",
+  "parentRequirements": [
+    "{8F385BA9-23F8-2969-19F8-0E04ABD77E5B}"
+  ],
+  "childRequirements": [],
+  "implemented": [
+    "{0AE482A0-8497-D213-7519-7076837B3313}"
+  ],
+  "prefix": "KLYQADEV"
+}
