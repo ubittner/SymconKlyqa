@@ -1,6 +1,5 @@
 <?php
 
-/** @noinspection PhpUnhandledExceptionInspection */
 /** @noinspection DuplicatedCode */
 /** @noinspection PhpUnused */
 
@@ -19,21 +18,53 @@ class KlyqaDevice extends IPSModule
         //Never delete this line!
         parent::Create();
 
-        ##### Properties
+        ########## Properties
         $this->RegisterPropertyString('CloudDeviceID', '');
         $this->RegisterPropertyString('DeviceName', '');
         $this->RegisterPropertyInteger('SwitchingProfile', 0);
         $this->RegisterPropertyInteger('UpdateInterval', 0);
 
-        ##### Variables
+        ########## Variables
 
         //Power
-        $id = @$this->GetIDForIdent('DevicePower');
-        $this->RegisterVariableBoolean('DevicePower', $this->Translate('Light'), '~Switch', 100);
-        if ($id == false) {
-            IPS_SetIcon(@$this->GetIDForIdent('DevicePower'), 'Bulb');
+        $this->RegisterVariableBoolean('Power', $this->Translate('Light'), '~Switch', 100);
+        $this->EnableAction('Power');
+
+        //Mode
+        $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
+        if (!IPS_VariableProfileExists($profile)) {
+            IPS_CreateVariableProfile($profile, 1);
         }
-        $this->EnableAction('DevicePower');
+        IPS_SetVariableProfileAssociation($profile, 0, $this->Translate('Color'), '', 0xC212D9);
+        IPS_SetVariableProfileAssociation($profile, 1, $this->Translate('Whitetone'), '', 0xFFFFFF);
+        IPS_SetVariableProfileIcon($profile, 'Bulb');
+        $this->RegisterVariableInteger('Mode', $this->Translate('Mode'), $profile, 110);
+
+        //Temperature
+        $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Temperature';
+        if (!IPS_VariableProfileExists($profile)) {
+            IPS_CreateVariableProfile($profile, 1);
+        }
+        IPS_SetVariableProfileValues($profile, 2700, 6500, 1);
+        IPS_SetVariableProfileText($profile, '', '°K');
+        IPS_SetVariableProfileIcon($profile, 'Temperature');
+        $this->RegisterVariableInteger('Temperature', $this->Translate('Temperature'), $profile, 300);
+        $this->EnableAction('Temperature');
+
+        //Presets
+        $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Presets';
+        if (!IPS_VariableProfileExists($profile)) {
+            IPS_CreateVariableProfile($profile, 1);
+        }
+        IPS_SetVariableProfileAssociation($profile, 2700, '2700', '', 0xFFA757);
+        IPS_SetVariableProfileAssociation($profile, 3650, '3650', '', 0xFFC595);
+        IPS_SetVariableProfileAssociation($profile, 4600, '4600', '', 0xFFDCBF);
+        IPS_SetVariableProfileAssociation($profile, 5550, '5550', '', 0xFFEEE0);
+        IPS_SetVariableProfileAssociation($profile, 6500, '6500', '', 0xFFFEFA);
+        IPS_SetVariableProfileText($profile, '', '°K');
+        IPS_SetVariableProfileIcon($profile, 'Temperature');
+        $this->RegisterVariableInteger('Presets', $this->Translate('Temperature Presets'), $profile, 310);
+        $this->EnableAction('Presets');
 
         //Brightness
         $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Brightness';
@@ -43,10 +74,10 @@ class KlyqaDevice extends IPSModule
         IPS_SetVariableProfileValues($profile, 0, 100, 1);
         IPS_SetVariableProfileText($profile, '', '%');
         IPS_SetVariableProfileIcon($profile, 'Sun');
-        $this->RegisterVariableInteger('Brightness', $this->Translate('Brightness'), $profile, 210);
+        $this->RegisterVariableInteger('Brightness', $this->Translate('Brightness'), $profile, 400);
         $this->EnableAction('Brightness');
 
-        ###### Timer
+        ########### Timer
         $this->RegisterTimer('UpdateDeviceState', 0, 'KLYQADEV_UpdateDeviceState(' . $this->InstanceID . ');');
 
         //Connect to parent (Klyqa Splitter)
@@ -59,7 +90,7 @@ class KlyqaDevice extends IPSModule
         parent::Destroy();
 
         //Delete profiles
-        $profiles = ['Brightness'];
+        $profiles = ['Mode', 'Temperature', 'Presets', 'Brightness'];
         foreach ($profiles as $profile) {
             $this->DeleteProfile($profile);
         }
@@ -76,6 +107,20 @@ class KlyqaDevice extends IPSModule
         //Check kernel runlevel
         if (IPS_GetKernelRunlevel() != KR_READY) {
             return;
+        }
+
+        ########## Maintain Variables
+
+        //Color
+        if ($this->ReadPropertyInteger('SwitchingProfile') != 2) {
+            $id = @$this->GetIDForIdent('Color');
+            $this->MaintainVariable('Color', $this->Translate('Color'), 1, '~HexColor', 200, true);
+            if ($id == false) {
+                IPS_SetIcon(@$this->GetIDForIdent('Color'), 'Paintbrush');
+            }
+            $this->EnableAction('Color');
+        } else {
+            $this->MaintainVariable('Color', $this->Translate('Color'), 1, '', 0, false);
         }
 
         $this->SetTimerInterval('UpdateDeviceState', $this->ReadPropertyInteger('UpdateInterval') * 1000);
@@ -110,7 +155,7 @@ class KlyqaDevice extends IPSModule
 
     public function ReceiveData($JSONString)
     {
-        //Received data from splitter, not used at the moment
+        //Received data from splitter, not used at the moment!
         $data = json_decode($JSONString);
         $this->SendDebug(__FUNCTION__, utf8_decode($data->Buffer), 0);
     }
@@ -120,12 +165,25 @@ class KlyqaDevice extends IPSModule
     public function RequestAction($Ident, $Value): void
     {
         switch ($Ident) {
-            case 'DevicePower':
+            case 'Power':
                 $this->ToggleDevicePower($Value);
                 break;
 
+            case 'Color':
+                $this->SetLightColor($Value);
+                break;
+
+            case 'Temperature':
+                $this->SetLightTemperature($Value);
+                break;
+
+            case 'Presets':
+                $this->SetValue($Ident, $Value);
+                $this->SetLightTemperature($Value);
+                break;
+
             case 'Brightness':
-                $this->ToggleBrightness($Value);
+                $this->SetBrightness($Value);
                 break;
 
         }
@@ -133,78 +191,27 @@ class KlyqaDevice extends IPSModule
 
     #################### Public
 
-    public function UpdateDeviceState(): void
+    public function UpdateDeviceState(): bool
     {
-        if (!$this->HasActiveParent()) {
-            $this->SendDebug(__FUNCTION__, 'Parent splitter instance is inactive!', 0);
-            $this->SetUpdateTimer();
-            return;
-        }
-        $cloudDeviceID = $this->ReadPropertyString('CloudDeviceID');
-        if (empty($cloudDeviceID)) {
-            $this->SendDebug(__FUNCTION__, 'Error, no cloud device id assigned!', 0);
-            $this->SetUpdateTimer();
-            return;
-        }
         $this->SetTimerInterval('UpdateDeviceState', 0);
-        $data = [];
-        $buffer = [];
-        $data['DataID'] = self::KLYQA_SPLITTER_DATA_GUID;
-        $buffer['Command'] = 'GetDeviceState';
-        $buffer['Params'] = ['cloudDeviceId' => $cloudDeviceID];
-        $data['Buffer'] = $buffer;
-        $data = json_encode($data);
-        $result = json_decode($this->SendDataToParent($data), true);
-        if (is_array($result)) {
-            if (array_key_exists('httpCode', $result)) {
-                $httpCode = $result['httpCode'];
-                $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
-                if ($httpCode != 200) {
-                    $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
-                    $this->SetUpdateTimer();
-                    return;
-                }
-            }
-            if (array_key_exists('body', $result)) {
-                $this->SendDebug(__FUNCTION__, 'Actual data: ' . json_encode($result['body']), 0);
-                $deviceData = $result['body'];
-                if (is_array($deviceData)) {
-                    //Status
-                    if (array_key_exists('status', $deviceData)) {
-                        $devicePowerState = false;
-                        if ($deviceData['status'] == 'on') {
-                            $devicePowerState = true;
-                        }
-                        $this->SetValue('DevicePower', $devicePowerState);
-                    }
-                    //Brightness
-                    if (array_key_exists('brightness', $deviceData)) {
-                        $brightness = $deviceData['brightness'];
-                        if (is_array($brightness)) {
-                            if (array_key_exists('percentage', $brightness)) {
-                                $this->SetValue('Brightness', $brightness['percentage']);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        $result = $this->GetLightState();
         $this->SetUpdateTimer();
+        return $result;
     }
 
     public function ToggleDevicePower(bool $State): bool
     {
         if (!$this->HasActiveParent()) {
-            $this->SendDebug(__FUNCTION__, 'Parent splitter instance is inactive!', 0);
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
             return false;
         }
         $cloudDeviceID = $this->ReadPropertyString('CloudDeviceID');
         if (empty($cloudDeviceID)) {
-            $this->SendDebug(__FUNCTION__, 'Error, no cloud device id assigned!', 0);
+            $this->SendDebug(__FUNCTION__, 'Abort, no cloud device id is assigned!', 0);
             return false;
         }
         $this->SetTimerInterval('UpdateDeviceState', 0);
-        $this->SetValue('DevicePower', $State);
+        $this->SetValue('Power', $State);
         $powerState = 'off';
         if ($State) {
             $powerState = 'on';
@@ -222,17 +229,21 @@ class KlyqaDevice extends IPSModule
         if (is_array($result)) {
             if (array_key_exists('httpCode', $result)) {
                 $httpCode = $result['httpCode'];
-                $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
-                if ($httpCode != 200) {
+                if ($httpCode == 200) {
+                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                } else {
                     $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
-                    $this->SetTimerInterval('UpdateDeviceState', 5000);
+                    //Revert
+                    $this->SetValue('Power', !$State);
+                    $this->SetUpdateTimer();
                     return false;
                 }
             }
             if (array_key_exists('body', $result)) {
                 $body = $result['body'];
+                $this->SendDebug(__FUNCTION__, 'Body data: ' . json_encode($body), 0);
+                $this->UpdateLightState(json_encode($body));
                 if (is_array($body)) {
-                    $this->SendDebug(__FUNCTION__, 'Actual data: ' . json_encode($body), 0);
                     if (array_key_exists('status', $body)) {
                         $devicePowerState = false;
                         if ($body['status'] == 'on') {
@@ -240,29 +251,168 @@ class KlyqaDevice extends IPSModule
                         }
                         if ($devicePowerState != $State) {
                             $success = false;
-                            //Set actual value
-                            $this->SetValue('DevicePower', $devicePowerState);
                         }
                     }
                 }
             }
         }
-        $this->SetTimerInterval('UpdateDeviceState', 5000);
+        $this->SetUpdateTimer();
         return $success;
     }
 
-    public function ToggleBrightness(int $Percentage): bool
+    public function SetLightColor(int $Color): bool
     {
         if (!$this->HasActiveParent()) {
-            $this->SendDebug(__FUNCTION__, 'Parent splitter instance is inactive!', 0);
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
             return false;
         }
         $cloudDeviceID = $this->ReadPropertyString('CloudDeviceID');
         if (empty($cloudDeviceID)) {
-            $this->SendDebug(__FUNCTION__, 'Error, no cloud device id assigned!', 0);
+            $this->SendDebug(__FUNCTION__, 'Abort, no cloud device id is assigned!', 0);
+            return false;
+        }
+        if ($this->ReadPropertyInteger('SwitchingProfile') == 2) {
+            $this->SendDebug(__FUNCTION__, 'Abort, the device does not support color!', 0);
             return false;
         }
         $this->SetTimerInterval('UpdateDeviceState', 0);
+        $actualColor = $this->GetValue('Color');
+        $brightness = $this->GetValue('Brightness');
+        $this->SetValue('Color', $Color);
+        $rgb['r'] = (($Color >> 16) & 0xFF);
+        $rgb['g'] = (($Color >> 8) & 0xFF);
+        $rgb['b'] = ($Color & 0xFF);
+        $payload = '{"payload":{"color":{"red":' . $rgb['r'] . ', "green":' . $rgb['g'] . ', "blue":' . $rgb['b'] . '}, "brightness": {"percentage":' . $brightness . '}}}';
+        $success = true;
+        $data = [];
+        $buffer = [];
+        $data['DataID'] = self::KLYQA_SPLITTER_DATA_GUID;
+        $buffer['Command'] = 'SetDeviceState';
+        $buffer['Params'] = ['cloudDeviceId' => $cloudDeviceID, 'payload' => $payload];
+        $data['Buffer'] = $buffer;
+        $data = json_encode($data);
+        $result = json_decode($this->SendDataToParent($data), true);
+        if (is_array($result)) {
+            if (array_key_exists('httpCode', $result)) {
+                $httpCode = $result['httpCode'];
+                if ($httpCode == 200) {
+                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                } else {
+                    $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
+                    //Revert
+                    $this->SetValue('Color', $actualColor);
+                    $this->SetUpdateTimer();
+                    return false;
+                }
+            }
+            if (array_key_exists('body', $result)) {
+                $body = $result['body'];
+                $this->SendDebug(__FUNCTION__, 'Body data: ' . json_encode($body), 0);
+                $this->UpdateLightState(json_encode($body));
+                if (is_array($body)) {
+                    if (array_key_exists('mode', $body)) {
+                        if ($body['mode'] = !'rgb') {
+                            $success = false;
+                        }
+                    }
+                    if (array_key_exists('color', $body)) {
+                        $color = $body['color'];
+                        if (array_key_exists('red', $color)) {
+                            if ($color['red'] = !$rgb['r']) {
+                                $success = false;
+                            }
+                        }
+                        if (array_key_exists('green', $color)) {
+                            if ($color['green'] = !$rgb['g']) {
+                                $success = false;
+                            }
+                        }
+                        if (array_key_exists('blue', $color)) {
+                            if ($color['blue'] = !$rgb['b']) {
+                                $success = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        $this->SetUpdateTimer();
+        return $success;
+    }
+
+    public function SetLightTemperature(int $Temperature): bool
+    {
+        if (!$this->HasActiveParent()) {
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
+            return false;
+        }
+        $cloudDeviceID = $this->ReadPropertyString('CloudDeviceID');
+        if (empty($cloudDeviceID)) {
+            $this->SendDebug(__FUNCTION__, 'Abbort, no cloud device id is assigned!', 0);
+            return false;
+        }
+        $this->SetTimerInterval('UpdateDeviceState', 0);
+        $actualTemperature = $this->GetValue('Temperature');
+        $brightness = $this->GetValue('Brightness');
+        $this->SetValue('Temperature', $Temperature);
+        $payload = '{"payload":{"brightness": {"percentage":' . $brightness . '},"temperature":' . $Temperature . '}}';
+        $success = true;
+        $data = [];
+        $buffer = [];
+        $data['DataID'] = self::KLYQA_SPLITTER_DATA_GUID;
+        $buffer['Command'] = 'SetDeviceState';
+        $buffer['Params'] = ['cloudDeviceId' => $cloudDeviceID, 'payload' => $payload];
+        $data['Buffer'] = $buffer;
+        $data = json_encode($data);
+        $result = json_decode($this->SendDataToParent($data), true);
+        if (is_array($result)) {
+            if (array_key_exists('httpCode', $result)) {
+                $httpCode = $result['httpCode'];
+                if ($httpCode == 200) {
+                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                } else {
+                    $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
+                    //Revert
+                    $this->SetValue('Temperature', $actualTemperature);
+                    $this->SetUpdateTimer();
+                    return false;
+                }
+            }
+            if (array_key_exists('body', $result)) {
+                $body = $result['body'];
+                $this->SendDebug(__FUNCTION__, 'Body data: ' . json_encode($body), 0);
+                $this->UpdateLightState(json_encode($body));
+                if (is_array($body)) {
+                    if (array_key_exists('mode', $body)) {
+                        if ($body['mode'] = !'cct') {
+                            $success = false;
+                        }
+                    }
+                    if (array_key_exists('temperature', $body)) {
+                        if ($body['temperature'] != $Temperature) {
+                            $success = false;
+                        }
+                    }
+                }
+            }
+        }
+        $this->SetUpdateTimer();
+        return $success;
+    }
+
+    public function SetBrightness(int $Percentage): bool
+    {
+        if (!$this->HasActiveParent()) {
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
+            return false;
+        }
+        $cloudDeviceID = $this->ReadPropertyString('CloudDeviceID');
+        if (empty($cloudDeviceID)) {
+            $this->SendDebug(__FUNCTION__, 'Abort, no cloud device id is assigned!', 0);
+            return false;
+        }
+        $this->SetTimerInterval('UpdateDeviceState', 0);
+        $actualBrightness = $this->GetValue('Brightness');
         $this->SetValue('Brightness', $Percentage);
         $payload = '{"payload":{"brightness":{"percentage": ' . $Percentage . '}}}';
         $success = true;
@@ -277,17 +427,21 @@ class KlyqaDevice extends IPSModule
         if (is_array($result)) {
             if (array_key_exists('httpCode', $result)) {
                 $httpCode = $result['httpCode'];
-                $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
-                if ($httpCode != 200) {
+                if ($httpCode == 200) {
+                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                } else {
                     $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
-                    $this->SetTimerInterval('UpdateDeviceState', 5000);
+                    //Revert
+                    $this->SetValue('Brightness', $actualBrightness);
+                    $this->SetUpdateTimer();
                     return false;
                 }
             }
             if (array_key_exists('body', $result)) {
                 $body = $result['body'];
+                $this->SendDebug(__FUNCTION__, 'Body data: ' . json_encode($body), 0);
+                $this->UpdateLightState(json_encode($body));
                 if (is_array($body)) {
-                    $this->SendDebug(__FUNCTION__, 'Actual data: ' . json_encode($body), 0);
                     if (array_key_exists('brightness', $body)) {
                         $brightness = $body['brightness'];
                         if (is_array($brightness)) {
@@ -295,8 +449,6 @@ class KlyqaDevice extends IPSModule
                                 $deviceBrightnessPercentage = $brightness['percentage'];
                                 if ($deviceBrightnessPercentage != $Percentage) {
                                     $success = false;
-                                    // Set actual value
-                                    $this->SetValue('Brightness', $deviceBrightnessPercentage);
                                 }
                             }
                         }
@@ -304,7 +456,7 @@ class KlyqaDevice extends IPSModule
                 }
             }
         }
-        $this->SetTimerInterval('UpdateDeviceState', 5000);
+        $this->SetUpdateTimer();
         return $success;
     }
 
@@ -326,5 +478,131 @@ class KlyqaDevice extends IPSModule
     private function SetUpdateTimer(): void
     {
         $this->SetTimerInterval('UpdateDeviceState', $this->ReadPropertyInteger('UpdateInterval') * 1000);
+    }
+
+    private function GetLightState(): bool
+    {
+        if (!$this->HasActiveParent()) {
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
+            $this->SetUpdateTimer();
+            return false;
+        }
+        $cloudDeviceID = $this->ReadPropertyString('CloudDeviceID');
+        if (empty($cloudDeviceID)) {
+            $this->SendDebug(__FUNCTION__, 'Abort, no cloud device id is assigned!', 0);
+            $this->SetUpdateTimer();
+            return false;
+        }
+        $this->SetTimerInterval('UpdateDeviceState', 0);
+        $success = false;
+        $data = [];
+        $buffer = [];
+        $data['DataID'] = self::KLYQA_SPLITTER_DATA_GUID;
+        $buffer['Command'] = 'GetDeviceState';
+        $buffer['Params'] = ['cloudDeviceId' => $cloudDeviceID];
+        $data['Buffer'] = $buffer;
+        $data = json_encode($data);
+        $result = json_decode($this->SendDataToParent($data), true);
+        if (is_array($result)) {
+            if (array_key_exists('httpCode', $result)) {
+                $httpCode = $result['httpCode'];
+                if ($httpCode == 200) {
+                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                } else {
+                    $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
+                    $this->SetUpdateTimer();
+                    return false;
+                }
+            }
+            if (array_key_exists('body', $result)) {
+                $body = $result['body'];
+                $this->SendDebug(__FUNCTION__, 'Body data: ' . json_encode($body), 0);
+                $this->UpdateLightState(json_encode($body));
+                if (is_array($body)) {
+                    $success = true;
+                }
+            }
+        }
+        return $success;
+    }
+
+    private function UpdateLightState(string $Data): void
+    {
+        $this->SendDebug(__FUNCTION__, 'Device data: ' . $Data, 0);
+        $deviceData = json_decode($Data, true);
+        if (is_array($deviceData)) {
+            //Status
+            if (array_key_exists('status', $deviceData)) {
+                $devicePowerState = false;
+                if ($deviceData['status'] == 'on') {
+                    $devicePowerState = true;
+                }
+                $this->SetValue('Power', $devicePowerState);
+            }
+            //Mode
+            $rgbMode = false;
+            if (array_key_exists('mode', $deviceData)) {
+                if ($deviceData['mode'] == 'rgb') {
+                    $rgbMode = true;
+                    $this->SetValue('Mode', 0);
+                }
+                if ($deviceData['mode'] == 'cct') {
+                    $this->SetValue('Mode', 1);
+                }
+            }
+            // Color
+            if ($this->ReadPropertyInteger('SwitchingProfile') != 2) {
+                if (array_key_exists('color', $deviceData)) {
+                    $color = $deviceData['color'];
+                    $red = 0;
+                    $green = 0;
+                    $blue = 0;
+                    if (array_key_exists('red', $color)) {
+                        $red = $color['red'];
+                    }
+                    if (array_key_exists('green', $color)) {
+                        $green = $color['green'];
+                    }
+                    if (array_key_exists('blue', $color)) {
+                        $blue = $color['blue'];
+                    }
+                    $color = ($red * 256 * 256) + ($green * 256) + $blue;
+                    if ($rgbMode) {
+                        $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
+                        IPS_SetVariableProfileAssociation($profile, 0, $this->Translate('Color'), '', $color);
+                    }
+                    $this->SetValue('Color', ($red * 256 * 256) + ($green * 256) + $blue);
+                }
+            }
+            //Brightness
+            if (array_key_exists('brightness', $deviceData)) {
+                $brightness = $deviceData['brightness'];
+                if (is_array($brightness)) {
+                    if (array_key_exists('percentage', $brightness)) {
+                        $this->SetValue('Brightness', $brightness['percentage']);
+                    }
+                }
+            }
+            //Light temperature
+            if (array_key_exists('temperature', $deviceData)) {
+                $temperature = $deviceData['temperature'];
+                $this->SetValue('Temperature', $temperature);
+                if (!$rgbMode) {
+                    $temperature = $temperature / 100;
+                    if ($temperature < 66) {
+                        $red = 255;
+                        $green = max(min(round(99.4708025861 * log($temperature) - 161.1195681661), 255), 0);
+                        $blue = $temperature <= 19 ? 0 : max(min(round(138.5177312231 * log($temperature - 10) - 305.0447927307), 255), 0);
+                    } else {
+                        $red = max(min(round(329.698727446 * (($temperature - 60) ^ -0.1332047592)), 255), 0);
+                        $green = max(min(round(288.1221695283 * (($temperature - 60) ^ -0.0755148492)), 255), 0);
+                        $blue = 255;
+                    }
+                    $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
+                    $color = ($red * 256 * 256) + ($green * 256) + $blue;
+                    IPS_SetVariableProfileAssociation($profile, 1, $this->Translate('Whitetone'), '', $color);
+                }
+            }
+        }
     }
 }
