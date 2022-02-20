@@ -30,27 +30,6 @@ class KlyqaDevice extends IPSModule
         $this->RegisterVariableBoolean('Power', $this->Translate('Light'), '~Switch', 100);
         $this->EnableAction('Power');
 
-        //Mode
-        $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
-        if (!IPS_VariableProfileExists($profile)) {
-            IPS_CreateVariableProfile($profile, 1);
-        }
-        IPS_SetVariableProfileAssociation($profile, 0, $this->Translate('Color'), '', 0xC212D9);
-        IPS_SetVariableProfileAssociation($profile, 1, $this->Translate('Whitetone'), '', 0xFFFFFF);
-        IPS_SetVariableProfileIcon($profile, 'Bulb');
-        $this->RegisterVariableInteger('Mode', $this->Translate('Mode'), $profile, 110);
-
-        //Temperature
-        $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Temperature';
-        if (!IPS_VariableProfileExists($profile)) {
-            IPS_CreateVariableProfile($profile, 1);
-        }
-        IPS_SetVariableProfileValues($profile, 2700, 6500, 1);
-        IPS_SetVariableProfileText($profile, '', '°K');
-        IPS_SetVariableProfileIcon($profile, 'Temperature');
-        $this->RegisterVariableInteger('Temperature', $this->Translate('Temperature'), $profile, 300);
-        $this->EnableAction('Temperature');
-
         //Presets
         $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Presets';
         if (!IPS_VariableProfileExists($profile)) {
@@ -63,8 +42,19 @@ class KlyqaDevice extends IPSModule
         IPS_SetVariableProfileAssociation($profile, 6500, '6500', '', 0xFFFEFA);
         IPS_SetVariableProfileText($profile, '', '°K');
         IPS_SetVariableProfileIcon($profile, 'Temperature');
-        $this->RegisterVariableInteger('Presets', $this->Translate('Temperature Presets'), $profile, 310);
+        $this->RegisterVariableInteger('Presets', $this->Translate('Presets'), $profile, 300);
         $this->EnableAction('Presets');
+
+        //Temperature
+        $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Temperature';
+        if (!IPS_VariableProfileExists($profile)) {
+            IPS_CreateVariableProfile($profile, 1);
+        }
+        IPS_SetVariableProfileValues($profile, 2700, 6500, 1);
+        IPS_SetVariableProfileText($profile, '', '°K');
+        IPS_SetVariableProfileIcon($profile, 'Temperature');
+        $this->RegisterVariableInteger('Temperature', $this->Translate('Temperature'), $profile, 310);
+        $this->EnableAction('Temperature');
 
         //Brightness
         $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Brightness';
@@ -111,8 +101,18 @@ class KlyqaDevice extends IPSModule
 
         ########## Maintain Variables
 
-        //Color
         if ($this->ReadPropertyInteger('SwitchingProfile') != 2) {
+            //Mode
+            $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
+            if (!IPS_VariableProfileExists($profile)) {
+                IPS_CreateVariableProfile($profile, 1);
+            }
+            IPS_SetVariableProfileAssociation($profile, 0, $this->Translate('Color'), '', -1);
+            IPS_SetVariableProfileAssociation($profile, 1, $this->Translate('Whitetone'), '', -1);
+            IPS_SetVariableProfileIcon($profile, 'Bulb');
+            $this->MaintainVariable('Mode', $this->Translate('Mode'), 1, $profile, 110, true);
+            $this->EnableAction('Mode');
+            //Color
             $id = @$this->GetIDForIdent('Color');
             $this->MaintainVariable('Color', $this->Translate('Color'), 1, '~HexColor', 200, true);
             if ($id == false) {
@@ -120,9 +120,10 @@ class KlyqaDevice extends IPSModule
             }
             $this->EnableAction('Color');
         } else {
+            $this->MaintainVariable('Mode', $this->Translate('Mode'), 1, '', 0, false);
+            $this->DeleteProfile('Mode');
             $this->MaintainVariable('Color', $this->Translate('Color'), 1, '', 0, false);
         }
-
         $this->SetTimerInterval('UpdateDeviceState', $this->ReadPropertyInteger('UpdateInterval') * 1000);
         $this->UpdateDeviceState();
     }
@@ -167,6 +168,10 @@ class KlyqaDevice extends IPSModule
         switch ($Ident) {
             case 'Power':
                 $this->ToggleDevicePower($Value);
+                break;
+
+            case 'Mode':
+                $this->SetLightMode($Value);
                 break;
 
             case 'Color':
@@ -258,6 +263,25 @@ class KlyqaDevice extends IPSModule
         }
         $this->SetUpdateTimer();
         return $success;
+    }
+
+    public function SetLightMode(int $Mode): bool
+    {
+        $this->SetUpdateTimer();
+        $this->SetValue('Mode', $Mode);
+        switch ($Mode) {
+            case 0: # RGB
+                IPS_SetHidden(@$this->GetIDForIdent('Color'), false);
+                IPS_SetHidden(@$this->GetIDForIdent('Temperature'), true);
+                IPS_SetHidden(@$this->GetIDForIdent('Presets'), true);
+                break;
+
+            default:
+                IPS_SetHidden(@$this->GetIDForIdent('Color'), true);
+                IPS_SetHidden(@$this->GetIDForIdent('Temperature'), false);
+                IPS_SetHidden(@$this->GetIDForIdent('Presets'), false);
+        }
+        return true;
     }
 
     public function SetLightColor(int $Color): bool
@@ -544,10 +568,13 @@ class KlyqaDevice extends IPSModule
             if (array_key_exists('mode', $deviceData)) {
                 if ($deviceData['mode'] == 'rgb') {
                     $rgbMode = true;
-                    $this->SetValue('Mode', 0);
                 }
-                if ($deviceData['mode'] == 'cct') {
-                    $this->SetValue('Mode', 1);
+                if ($this->ReadPropertyInteger('SwitchingProfile') != 2) {
+                    $mode = 1;
+                    if ($rgbMode) {
+                        $mode = 0;
+                    }
+                    $this->SetLightMode($mode);
                 }
             }
             // Color
@@ -587,20 +614,22 @@ class KlyqaDevice extends IPSModule
             if (array_key_exists('temperature', $deviceData)) {
                 $temperature = $deviceData['temperature'];
                 $this->SetValue('Temperature', $temperature);
-                if (!$rgbMode) {
-                    $temperature = $temperature / 100;
-                    if ($temperature < 66) {
-                        $red = 255;
-                        $green = max(min(round(99.4708025861 * log($temperature) - 161.1195681661), 255), 0);
-                        $blue = $temperature <= 19 ? 0 : max(min(round(138.5177312231 * log($temperature - 10) - 305.0447927307), 255), 0);
-                    } else {
-                        $red = max(min(round(329.698727446 * (($temperature - 60) ^ -0.1332047592)), 255), 0);
-                        $green = max(min(round(288.1221695283 * (($temperature - 60) ^ -0.0755148492)), 255), 0);
-                        $blue = 255;
+                if ($this->ReadPropertyInteger('SwitchingProfile') != 2) {
+                    if (!$rgbMode) {
+                        $temperature = $temperature / 100;
+                        if ($temperature < 66) {
+                            $red = 255;
+                            $green = max(min(round(99.4708025861 * log($temperature) - 161.1195681661), 255), 0);
+                            $blue = $temperature <= 19 ? 0 : max(min(round(138.5177312231 * log($temperature - 10) - 305.0447927307), 255), 0);
+                        } else {
+                            $red = max(min(round(329.698727446 * (($temperature - 60) ^ -0.1332047592)), 255), 0);
+                            $green = max(min(round(288.1221695283 * (($temperature - 60) ^ -0.0755148492)), 255), 0);
+                            $blue = 255;
+                        }
+                        $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
+                        $color = ($red * 256 * 256) + ($green * 256) + $blue;
+                        IPS_SetVariableProfileAssociation($profile, 1, $this->Translate('Whitetone'), '', $color);
                     }
-                    $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
-                    $color = ($red * 256 * 256) + ($green * 256) + $blue;
-                    IPS_SetVariableProfileAssociation($profile, 1, $this->Translate('Whitetone'), '', $color);
                 }
             }
         }
