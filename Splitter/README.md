@@ -19,7 +19,7 @@ Der Nutzer stimmt den o.a. Bedingungen, sowie den Lizenzbedingungen ausdrücklic
 
 ### 1. Funktionsumfang
 
-* TBD
+* Stellt die Verbindung zum Klyqa Server her
 
 ### 2. Voraussetzungen
 
@@ -33,23 +33,29 @@ Der Nutzer stimmt den o.a. Bedingungen, sowie den Lizenzbedingungen ausdrücklic
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
-* TBD
+- In IP-Symcon an beliebiger Stelle `Instanz hinzufügen` auswählen und `Klyqa Splitter` auswählen, welches unter dem Hersteller `Klyqa` aufgeführt ist.
+- Es wird eine neue `Klyqa Splitter` Instanz unter der Kategorie `Splitter Instanzen` angelegt.
 
 __Konfigurationsseite__:
 
 Name            | Beschreibung
 --------------- | -----------------------------------------
-TBD             | TBD
+E-Mail Adresse  | E-Mail Adresse (Klyqa Konto)
+Kennwort        | Kennwort (Klyqa Konto)
+Timeout         | Netzwerk Timeout
 
 __Aktionsbereich__:
 
-Name            | Beschreibung
---------------- | -----------------------------------------
-TBD             | TBD       
+Name                    | Beschreibung
+----------------------- | ----------------------------------------------
+Entwicklerbereich       |
+Access Token            | Access Token
+Access Token übernehmen | Access Token übernehmen
+Access Token löschen    | Access Token löschen
 
 __Vorgehensweise__:
 
-* Geben Sie Ihre E-Mail Adresse und Ihr Passwort für Ihr Klyqa Konto an und übernehmen die Änderungen.
+* Geben Sie Ihre E-Mail Adresse und Ihr Passwort für Ihr Klyqa Konto an und übernehmen anschließend die Änderungen.
 
 ### 5. Statusvariablen und Profile
 
@@ -70,4 +76,4 @@ Die `Klyqa Splitter` Instanz hat im WebFront keine Funktionalität.
 
 ### 7. PHP-Befehlsreferenz
 
-* TBD
+* Gemäss verfügbarer Auflistung in IP-Symcon

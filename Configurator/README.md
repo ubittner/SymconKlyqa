@@ -19,7 +19,8 @@ Der Nutzer stimmt den o.a. Bedingungen, sowie den Lizenzbedingungen ausdrücklic
 
 ### 1. Funktionsumfang
 
-* TBD
+* Listet die verfügbaren Klyqa Geräte (Lampen) auf
+* Automatisches Anlegen des ausgewählten Klyqa Gerätes (Lampe)
 
 ### 2. Voraussetzungen
 
@@ -34,7 +35,8 @@ Der Nutzer stimmt den o.a. Bedingungen, sowie den Lizenzbedingungen ausdrücklic
 
 ### 4. Einrichten der Instanzen in IP-Symcon
 
-* TBD
+- In IP-Symcon an beliebiger Stelle `Instanz hinzufügen` auswählen und `Klyqa Konfigurator` auswählen, welches unter dem Hersteller `Klyqa` aufgeführt ist.
+- Es wird eine neue `Klyqa Konfigurator` Instanz unter der Kategorie `Konfigurator Instanzen` angelegt.
 
 __Konfigurationsseite__:
 

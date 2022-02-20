@@ -19,7 +19,12 @@ Der Nutzer stimmt den o.a. Bedingungen, sowie den Lizenzbedingungen ausdrücklic
 
 ### 1. Funktionsumfang
 
-* TBD
+* Lampe schalten (Aus / An)
+* Modus schalten (Farbe / Weisston)
+* Farbe auswählen (RGB)
+* Voreinstellungen (5 verschiedene Weisstöne in °K)
+* Temperatur auswählen (2700°K bis 6500°K)
+* Helligkeit verändern (1% bis 100%)
 
 ### 2. Voraussetzungen
 
@@ -32,25 +37,39 @@ Der Nutzer stimmt den o.a. Bedingungen, sowie den Lizenzbedingungen ausdrücklic
 
 * Bei kommerzieller Nutzung (z.B. als Einrichter oder Integrator) wenden Sie sich bitte zunächst an den Autor.
 
+- Sofern noch keine `Klyqa Splitter` Instanz in IP-Symcon vorhanden ist, so beginnen Sie mit der Installation der `Klyqa Splitter` Instanz.
+- Hier finden Sie die [Dokumentation](../Splitter) zur `Klyqa Splitter` Instanz.
+
+* Sofern noch keine `Klyqa Konfigurator` Instanz in IP-Symcon vorhanden ist, so beginnen Sie mit der Installation der `Klyqa Konfigurator` Instanz.
+* Hier finden Sie die [Dokumentation](../Configurator) zur `Klyqa Konfigurator` Instanz.
+
+- Alternativ könenn Sie das Klyqa Gerät auch manuell anlegen. Lesen Sie bitte dafür diese Dokumentation weiter durch.
+
 ### 4. Einrichten der Instanzen in IP-Symcon
 
-* TBD
+- In IP-Symcon an beliebiger Stelle `Instanz hinzufügen` auswählen und `Klyqa Gerät` auswählen, welches unter dem Hersteller `Klyqa` aufgeführt ist.
+- Es wird eine neue Instanz `Klyqa Gerät` angelegt.
 
 __Konfigurationsseite__:
 
-Name            | Beschreibung
---------------- | -----------------------------------------
-TBD             | TBD
+Name                        | Beschreibung
+--------------------------- | -----------------------------------------
+Cloud Geräte ID             | Cloud Geräte ID
+Gerätename                  | Gerätename
+Schaltprofil                | Schaltprofil
+Aktualisierungsintervall    | Aktualisierungsinterval
 
 __Aktionsbereich__:
 
-Name            | Beschreibung
---------------- | -----------------------------------------
-TBD             | TBD
+Name                        | Beschreibung
+--------------------------- | -----------------------------------------
+Entwicklerbereich           |
+Gerätestaus aktualisieren   | Aktualisiert denb Status des Gerätes
 
 __Vorgehensweise__:
 
-* Geben Sie bei manueller Erstellung der Instanz `Klyqa Gerät` die Daten für `Cloud Geräte ID` und `Gerätename` in der Instanzkonfiguration an und übernehmen die Änderungen.
+* Geben Sie bei manueller Erstellung der Instanz `Klyqa Gerät` die Daten für `Cloud Geräte ID` und `Gerätename` in der Instanzkonfiguration an. 
+* Wählen Sie das entsprechende Schaltprofil für das Gerät aus und übernehmen anschließend alle Änderungen.
 
 ### 5. Statusvariablen und Profile
 
@@ -59,16 +78,39 @@ Das Löschen einzelner kann zu Fehlfunktionen führen.
 
 ##### Statusvariablen
 
-* TBD
+Name        | Typ     | Beschreibung
+----------- | ------- | ----------------------------------------------------
+Power       | boolean | Power (Aus / An)
+Mode        | integer | Modus (Farbe / Weisston)
+Color       | integer | Farbe (RGB)
+Presets     | integer | Voreinstellungen (5 Weisstöne °K)
+Temperature | integer | Temperatur (2700°K bis 6500°K)
+Brightness  | integer | Helliggkeit (1% bis 100%)
 
 ##### Profile:
 
-Es werden keine Profile verwendet.
+KLYQADEV.InstanzID.Name
+
+Name        | Typ
+----------- | -------
+Mode        | integer
+Presets     | integer
+Temperature | integer
+Brightness  | integer
+
+Wird die Instanz `Klyqa Gerät` gelöscht, so werden automatisch die oben aufgeführten Profile gelöscht.
 
 ### 6. WebFront
 
-* TBD
+Die Funktionalität, die das Modul im WebFront bietet:
+
+* Lampe schalten (Aus / An)
+* Modus schalten (Farbe / Weisston)
+* Farbe auswählen (RGB)
+* Voreinstellungen (5 verschiedene Weisstöne in °K)
+* Temperatur auswählen (2700°K bis 6500°K)
+* Helligkeit verändern (1% bis 100%)
 
 ### 7. PHP-Befehlsreferenz
 
-* TBD
+* Gemäss verfügbarer Auflistung in IP-Symcon
