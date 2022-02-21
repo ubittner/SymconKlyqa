@@ -126,11 +126,11 @@ class KlyqaConfigurator extends IPSModule
                                 $product = $device['productId'];
                             }
                             switch ($product) {
-                                case '@klyqa.lighting.rgb-cw-ww.e27':
+                                case '@klyqa.lighting.cw-ww.e27':
                                     $switchingProfile = 1;
                                     break;
 
-                                case '@klyqa.lighting.cw-ww.e27':
+                                case '@klyqa.lighting.rgb-cw-ww.e27':
                                     $switchingProfile = 2;
                                     break;
 
@@ -143,12 +143,12 @@ class KlyqaConfigurator extends IPSModule
                             }
                             $deviceInstanceID = $this->GetDeviceInstanceID($cloudDeviceID);
                             $values[] = [
-                                'parent'                => 1,
-                                'name'                  => $name,
-                                'Product'               => $product,
-                                'ID'                    => $cloudDeviceID,
-                                'instanceID'            => $deviceInstanceID,
-                                'create'                => [
+                                'parent'     => 1,
+                                'name'       => $name,
+                                'Product'    => $product,
+                                'ID'         => $cloudDeviceID,
+                                'instanceID' => $deviceInstanceID,
+                                'create'     => [
                                     'moduleID'      => self::KLYQA_DEVICE_GUID,
                                     'name'          => $name . ' (Klyqa ' . $this->Translate('Device') . ')',
                                     'configuration' => [
@@ -187,17 +187,17 @@ class KlyqaConfigurator extends IPSModule
                             }
                             $groupInstanceID = $this->GetGroupInstanceID($groupID);
                             $values[] = [
-                                'parent'                => 2,
-                                'name'                  => $name,
-                                'Product'               => $product,
-                                'ID'                    => $groupID,
-                                'instanceID'            => $groupInstanceID,
-                                'create'                => [
+                                'parent'     => 2,
+                                'name'       => $name,
+                                'Product'    => $product,
+                                'ID'         => $groupID,
+                                'instanceID' => $groupInstanceID,
+                                'create'     => [
                                     'moduleID'      => self::KLYQA_GROUP_GUID,
                                     'name'          => $name . ' (Klyqa ' . $this->Translate('Room') . ')',
                                     'configuration' => [
-                                        'GroupID'          => (string) $groupID,
-                                        'GroupName'        => (string) $name
+                                        'GroupID'   => (string) $groupID,
+                                        'GroupName' => (string) $name
                                     ],
                                     'location' => $location
                                 ]
@@ -221,17 +221,17 @@ class KlyqaConfigurator extends IPSModule
                             }
                             $groupInstanceID = $this->GetGroupInstanceID($groupID);
                             $values[] = [
-                                'parent'                => 2,
-                                'name'                  => $name,
-                                'Product'               => $product,
-                                'ID'                    => $groupID,
-                                'instanceID'            => $groupInstanceID,
-                                'create'                => [
+                                'parent'     => 2,
+                                'name'       => $name,
+                                'Product'    => $product,
+                                'ID'         => $groupID,
+                                'instanceID' => $groupInstanceID,
+                                'create'     => [
                                     'moduleID'      => self::KLYQA_GROUP_GUID,
                                     'name'          => $name . ' (Klyqa ' . $this->Translate('Group') . ')',
                                     'configuration' => [
-                                        'GroupID'          => (string) $groupID,
-                                        'GroupName'        => (string) $name
+                                        'GroupID'   => (string) $groupID,
+                                        'GroupName' => (string) $name
                                     ],
                                     'location' => $location
                                 ]
