@@ -2,6 +2,8 @@
 
 ### Device (Gerät)
 
+Dieses Modul steuert eine Klyqa Lampe.  
+
 Für dieses Modul besteht kein Anspruch auf Fehlerfreiheit, Weiterentwicklung, sonstige Unterstützung oder Support.  
 Bevor das Modul installiert wird, sollte unbedingt ein Backup von IP-Symcon durchgeführt werden.  
 Der Entwickler haftet nicht für eventuell auftretende Datenverluste oder sonstige Schäden.  
@@ -20,6 +22,7 @@ Der Nutzer stimmt den o.a. Bedingungen, sowie den Lizenzbedingungen ausdrücklic
 ### 1. Funktionsumfang
 
 * Lampe schalten (Aus / An)
+* Status (Farbe)
 * Modus schalten (Farbe / Weisston)
 * Farbe auswählen (RGB)
 * Voreinstellungen (5 verschiedene Weisstöne in °K)
@@ -81,6 +84,7 @@ Das Löschen einzelner kann zu Fehlfunktionen führen.
 Name        | Typ     | Beschreibung
 ----------- | ------- | ----------------------------------------------------
 Power       | boolean | Power (Aus / An)
+Status      | integer | Farbe
 Mode        | integer | Modus (Farbe / Weisston)
 Color       | integer | Farbe (RGB)
 Presets     | integer | Voreinstellungen (5 Weisstöne °K)
@@ -105,6 +109,7 @@ Wird die Instanz `Klyqa Gerät` gelöscht, so werden automatisch die oben aufgef
 Die Funktionalität, die das Modul im WebFront bietet:
 
 * Lampe schalten (Aus / An)
+* Status (Farbe)
 * Modus schalten (Farbe / Weisston)
 * Farbe auswählen (RGB)
 * Voreinstellungen (5 verschiedene Weisstöne in °K)

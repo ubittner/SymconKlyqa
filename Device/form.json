@@ -37,11 +37,11 @@
           "value": 0
         },
         {
-          "caption": "Device RGB-CW-WW",
+          "caption": "Device CW-WW",
           "value": 1
         },
         {
-          "caption": "Device CW-WW",
+          "caption": "Device RGB-CW-WW",
           "value": 2
         }
       ]

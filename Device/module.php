@@ -30,6 +30,13 @@ class KlyqaDevice extends IPSModule
         $this->RegisterVariableBoolean('Power', $this->Translate('Light'), '~Switch', 100);
         $this->EnableAction('Power');
 
+        //Status
+        $id = @$this->GetIDForIdent('Status');
+        $this->RegisterVariableInteger('Status', 'Status', '~HexColor', 110);
+        if ($id == false) {
+            IPS_SetIcon(@$this->GetIDForIdent('Status'), 'Bulb');
+        }
+
         //Presets
         $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Presets';
         if (!IPS_VariableProfileExists($profile)) {
@@ -80,7 +87,7 @@ class KlyqaDevice extends IPSModule
         parent::Destroy();
 
         //Delete profiles
-        $profiles = ['Mode', 'Temperature', 'Presets', 'Brightness'];
+        $profiles = ['Mode', 'Presets', 'Temperature', 'Brightness'];
         foreach ($profiles as $profile) {
             $this->DeleteProfile($profile);
         }
@@ -101,7 +108,7 @@ class KlyqaDevice extends IPSModule
 
         ########## Maintain Variables
 
-        if ($this->ReadPropertyInteger('SwitchingProfile') != 2) {
+        if ($this->ReadPropertyInteger('SwitchingProfile') == 2) {
             //Mode
             $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
             if (!IPS_VariableProfileExists($profile)) {
@@ -109,8 +116,8 @@ class KlyqaDevice extends IPSModule
             }
             IPS_SetVariableProfileAssociation($profile, 0, $this->Translate('Color'), '', -1);
             IPS_SetVariableProfileAssociation($profile, 1, $this->Translate('Whitetone'), '', -1);
-            IPS_SetVariableProfileIcon($profile, 'Bulb');
-            $this->MaintainVariable('Mode', $this->Translate('Mode'), 1, $profile, 110, true);
+            IPS_SetVariableProfileIcon($profile, 'Gear');
+            $this->MaintainVariable('Mode', $this->Translate('Mode'), 1, $profile, 120, true);
             $this->EnableAction('Mode');
             //Color
             $id = @$this->GetIDForIdent('Color');
@@ -178,12 +185,12 @@ class KlyqaDevice extends IPSModule
                 $this->SetLightColor($Value);
                 break;
 
-            case 'Temperature':
+            case 'Presets':
+                $this->SetValue($Ident, $Value);
                 $this->SetLightTemperature($Value);
                 break;
 
-            case 'Presets':
-                $this->SetValue($Ident, $Value);
+            case 'Temperature':
                 $this->SetLightTemperature($Value);
                 break;
 
@@ -270,13 +277,13 @@ class KlyqaDevice extends IPSModule
         $this->SetUpdateTimer();
         $this->SetValue('Mode', $Mode);
         switch ($Mode) {
-            case 0: # RGB
+            case 0: # RGB color
                 IPS_SetHidden(@$this->GetIDForIdent('Color'), false);
                 IPS_SetHidden(@$this->GetIDForIdent('Temperature'), true);
                 IPS_SetHidden(@$this->GetIDForIdent('Presets'), true);
                 break;
 
-            default:
+            default: # Whitetone
                 IPS_SetHidden(@$this->GetIDForIdent('Color'), true);
                 IPS_SetHidden(@$this->GetIDForIdent('Temperature'), false);
                 IPS_SetHidden(@$this->GetIDForIdent('Presets'), false);
@@ -295,7 +302,7 @@ class KlyqaDevice extends IPSModule
             $this->SendDebug(__FUNCTION__, 'Abort, no cloud device id is assigned!', 0);
             return false;
         }
-        if ($this->ReadPropertyInteger('SwitchingProfile') == 2) {
+        if ($this->ReadPropertyInteger('SwitchingProfile') <= 1) {
             $this->SendDebug(__FUNCTION__, 'Abort, the device does not support color!', 0);
             return false;
         }
@@ -557,8 +564,10 @@ class KlyqaDevice extends IPSModule
         if (is_array($deviceData)) {
             //Status
             if (array_key_exists('status', $deviceData)) {
-                $devicePowerState = false;
-                if ($deviceData['status'] == 'on') {
+                if ($deviceData['status'] == 'off') {
+                    $devicePowerState = false;
+                    $this->SetValue('Status', 0);
+                } else {
                     $devicePowerState = true;
                 }
                 $this->SetValue('Power', $devicePowerState);
@@ -569,7 +578,7 @@ class KlyqaDevice extends IPSModule
                 if ($deviceData['mode'] == 'rgb') {
                     $rgbMode = true;
                 }
-                if ($this->ReadPropertyInteger('SwitchingProfile') != 2) {
+                if ($this->ReadPropertyInteger('SwitchingProfile') == 2) {
                     $mode = 1;
                     if ($rgbMode) {
                         $mode = 0;
@@ -578,7 +587,7 @@ class KlyqaDevice extends IPSModule
                 }
             }
             // Color
-            if ($this->ReadPropertyInteger('SwitchingProfile') != 2) {
+            if ($this->ReadPropertyInteger('SwitchingProfile') == 2) {
                 if (array_key_exists('color', $deviceData)) {
                     $color = $deviceData['color'];
                     $red = 0;
@@ -598,7 +607,10 @@ class KlyqaDevice extends IPSModule
                         $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
                         IPS_SetVariableProfileAssociation($profile, 0, $this->Translate('Color'), '', $color);
                     }
-                    $this->SetValue('Color', ($red * 256 * 256) + ($green * 256) + $blue);
+                    $this->SetValue('Color', $color);
+                    if ($this->GetValue('Power')) {
+                        $this->SetValue('Status', $color);
+                    }
                 }
             }
             //Brightness
@@ -614,20 +626,23 @@ class KlyqaDevice extends IPSModule
             if (array_key_exists('temperature', $deviceData)) {
                 $temperature = $deviceData['temperature'];
                 $this->SetValue('Temperature', $temperature);
-                if ($this->ReadPropertyInteger('SwitchingProfile') != 2) {
-                    if (!$rgbMode) {
-                        $temperature = $temperature / 100;
-                        if ($temperature < 66) {
-                            $red = 255;
-                            $green = max(min(round(99.4708025861 * log($temperature) - 161.1195681661), 255), 0);
-                            $blue = $temperature <= 19 ? 0 : max(min(round(138.5177312231 * log($temperature - 10) - 305.0447927307), 255), 0);
-                        } else {
-                            $red = max(min(round(329.698727446 * (($temperature - 60) ^ -0.1332047592)), 255), 0);
-                            $green = max(min(round(288.1221695283 * (($temperature - 60) ^ -0.0755148492)), 255), 0);
-                            $blue = 255;
-                        }
+                $temperature = $temperature / 100;
+                if ($temperature < 66) {
+                    $red = 255;
+                    $green = max(min(round(99.4708025861 * log($temperature) - 161.1195681661), 255), 0);
+                    $blue = $temperature <= 19 ? 0 : max(min(round(138.5177312231 * log($temperature - 10) - 305.0447927307), 255), 0);
+                } else {
+                    $red = max(min(round(329.698727446 * (($temperature - 60) ^ -0.1332047592)), 255), 0);
+                    $green = max(min(round(288.1221695283 * (($temperature - 60) ^ -0.0755148492)), 255), 0);
+                    $blue = 255;
+                }
+                $color = ($red * 256 * 256) + ($green * 256) + $blue;
+                if (!$rgbMode) {
+                    if ($this->GetValue('Power')) {
+                        $this->SetValue('Status', $color);
+                    }
+                    if ($this->ReadPropertyInteger('SwitchingProfile') == 2) {
                         $profile = self::MODULE_PREFIX . '.' . $this->InstanceID . '.Mode';
-                        $color = ($red * 256 * 256) + ($green * 256) + $blue;
                         IPS_SetVariableProfileAssociation($profile, 1, $this->Translate('Whitetone'), '', $color);
                     }
                 }
