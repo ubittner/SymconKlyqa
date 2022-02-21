@@ -2,6 +2,8 @@
 
 ### Group (Gruppe)
 
+Dieses Modul steuert eine Gruppe von Klyqa Lampen oder einem Raum.  
+
 Für dieses Modul besteht kein Anspruch auf Fehlerfreiheit, Weiterentwicklung, sonstige Unterstützung oder Support.  
 Bevor das Modul installiert wird, sollte unbedingt ein Backup von IP-Symcon durchgeführt werden.  
 Der Entwickler haftet nicht für eventuell auftretende Datenverluste oder sonstige Schäden.  
@@ -19,7 +21,8 @@ Der Nutzer stimmt den o.a. Bedingungen, sowie den Lizenzbedingungen ausdrücklic
 
 ### 1. Funktionsumfang
 
-* TBD
+* Gruppe schalten (Aus / An)
+* Helligkeit verändern (1% bis 100%)
 
 ### 2. Voraussetzungen
 
@@ -32,21 +35,36 @@ Der Nutzer stimmt den o.a. Bedingungen, sowie den Lizenzbedingungen ausdrücklic
 
 * Bei kommerzieller Nutzung (z.B. als Einrichter oder Integrator) wenden Sie sich bitte zunächst an den Autor.
 
+- Sofern noch keine `Klyqa Splitter` Instanz in IP-Symcon vorhanden ist, so beginnen Sie mit der Installation der `Klyqa Splitter` Instanz.
+- Hier finden Sie die [Dokumentation](../Splitter) zur `Klyqa Splitter` Instanz.
+
+* Sofern noch keine `Klyqa Konfigurator` Instanz in IP-Symcon vorhanden ist, so beginnen Sie mit der Installation der `Klyqa Konfigurator` Instanz.
+* Hier finden Sie die [Dokumentation](../Configurator) zur `Klyqa Konfigurator` Instanz.
+
+- Alternativ könenn Sie die Klyqa Gruppe auch manuell anlegen. Lesen Sie bitte dafür diese Dokumentation weiter durch.
+
 ### 4. Einrichten der Instanzen in IP-Symcon
 
-* TBD
+- In IP-Symcon an beliebiger Stelle `Instanz hinzufügen` auswählen und `Klyqa Gruppe` auswählen, welches unter dem Hersteller `Klyqa` aufgeführt ist.
+- Es wird eine neue Instanz `Klyqa Gruppe` angelegt.
 
 __Konfigurationsseite__:
 
-Name            | Beschreibung
---------------- | -----------------------------------------
-TBD             | TBD
+Name                        | Beschreibung
+--------------------------- | ---------------------------
+Gruppen ID                  | Gruppen ID
+Gruppenname                 | Gruppenname
+Aktualisierungsintervall    | Aktualisierungsinterval
 
 __Aktionsbereich__:
 
-Name            | Beschreibung
---------------- | -----------------------------------------
-TBD             | TBD
+Name                        | Beschreibung
+--------------------------- | ---------------------------
+Schaltprofil                | Schaltprofil
+Entwicklerbereich           |
+Gruppengeräte ermitteln     | Gruppengeräte ermitteln
+Schaltprofil ermitteln      | Schaltprofil ermitteln
+Gruppenstatus aktualisieren | Gruppenstatus aktualisieren
 
 __Vorgehensweise__:
 
@@ -59,16 +77,26 @@ Das Löschen einzelner kann zu Fehlfunktionen führen.
 
 ##### Statusvariablen
 
-* TBD
+Name        | Typ     | Beschreibung
+----------- | ------- | -------------------------
+Power       | boolean | Power (Aus / An)
+Brightness  | integer | Helliggkeit (1% bis 100%)
 
 ##### Profile:
 
-Es werden keine Profile verwendet.
+KLYQAGRP.InstanzID.Name
+
+Name        | Typ
+----------- | -------
+Brightness  | integer
+
+Wird die Instanz `Klyqa Gruppe` gelöscht, so werden automatisch die oben aufgeführten Profile gelöscht.
 
 ### 6. WebFront
 
-* TBD
+* Gruppe schalten (Aus / An)
+* Helligkeit verändern (1% bis 100%)
 
 ### 7. PHP-Befehlsreferenz
 
-* TBD
+* Gemäss verfügbarer Auflistung in IP-Symcon
