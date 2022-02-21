@@ -28,25 +28,6 @@
       "caption": "Group Name"
     },
     {
-      "type": "Select",
-      "name": "SwitchingProfile",
-      "caption": "Switching profile",
-      "options": [
-        {
-          "caption": "Please select",
-          "value": 0
-        },
-        {
-          "caption": "RGB-CW-WW",
-          "value": 1
-        },
-        {
-          "caption": "CW-WW",
-          "value": 2
-        }
-      ]
-    },
-    {
       "type": "NumberSpinner",
       "name": "UpdateInterval",
       "caption": "Update interval",
@@ -85,11 +66,29 @@
           "edit": {
             "type": "ValidationTextBox"
           }
+        },
+        {
+          "caption": "Product ID",
+          "name": "ProductID",
+          "width": "400px",
+          "add": "",
+          "edit": {
+            "type": "ValidationTextBox"
+          }
         }
       ]
     }
   ],
   "actions": [
+    {
+      "type": "Label",
+      "name": "SwitchingProfileDescription",
+      "caption": "Switching profile: "
+    },
+    {
+      "type": "Label",
+      "caption": " "
+    },
     {
       "type": "ExpansionPanel",
       "caption": "Developer area",
@@ -98,6 +97,11 @@
           "type": "Button",
           "caption": "Get Group Devices",
           "onClick": "KLYQAGRP_GetGroupDevices($id);"
+        },
+        {
+          "type": "Button",
+          "caption": "Identify switching profile",
+          "onClick": "KLYQAGRP_DetermineSwitchingProfile($id);"
         },
         {
           "type": "Button",

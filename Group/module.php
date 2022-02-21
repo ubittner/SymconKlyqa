@@ -1,6 +1,5 @@
 <?php
 
-/** @noinspection PhpUnhandledExceptionInspection */
 /** @noinspection DuplicatedCode */
 /** @noinspection PhpUnused */
 
@@ -22,7 +21,6 @@ class KlyqaGroup extends IPSModule
         ##### Properties
         $this->RegisterPropertyString('GroupID', '');
         $this->RegisterPropertyString('GroupName', '');
-        $this->RegisterPropertyInteger('SwitchingProfile', 0);
         $this->RegisterPropertyInteger('UpdateInterval', 0);
         $this->RegisterPropertyString('Devices', '');
 
@@ -46,6 +44,10 @@ class KlyqaGroup extends IPSModule
         IPS_SetVariableProfileIcon($profile, 'Sun');
         $this->RegisterVariableInteger('Brightness', $this->Translate('Brightness'), $profile, 210);
         $this->EnableAction('Brightness');
+
+        ##### Attribute
+        //Switching profile 0 = unknown, 1 = Whitetone, 2 = RGB color
+        $this->RegisterAttributeInteger('SwitchingProfile', 0);
 
         ###### Timer
         $this->RegisterTimer('UpdateGroupState', 0, 'KLYQAGRP_UpdateGroupState(' . $this->InstanceID . ');');
@@ -82,6 +84,7 @@ class KlyqaGroup extends IPSModule
         if (empty($this->ReadPropertyString('Devices'))) {
             $this->GetGroupDevices();
         }
+        $this->DetermineSwitchingProfile();
         $this->SetTimerInterval('UpdateGroupState', $this->ReadPropertyInteger('UpdateInterval') * 1000);
         $this->UpdateGroupState();
     }
@@ -105,10 +108,9 @@ class KlyqaGroup extends IPSModule
     public function GetConfigurationForm()
     {
         $formData = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
-        //Version info
         $library = IPS_GetLibrary(self::LIBRARY_GUID);
         $formData['elements'][2]['caption'] = 'ID: ' . $this->InstanceID . ', Version: ' . $library['Version'] . '-' . $library['Build'] . ' vom ' . date('d.m.Y', $library['Date']);
-
+        $formData['actions'][0]['caption'] = $this->Translate('Switching profile: ') . $this->GetSwitchingProfileDescription();
         return json_encode($formData);
     }
 
@@ -129,7 +131,7 @@ class KlyqaGroup extends IPSModule
                 break;
 
             case 'Brightness':
-                $this->ToggleBrightness($Value);
+                $this->ToggleGroupBrightness($Value);
                 break;
 
         }
@@ -137,15 +139,18 @@ class KlyqaGroup extends IPSModule
 
     #################### Public
 
-    public function GetGroupDevices(): void
+    public function GetGroupDevices(): bool
     {
         if (!$this->HasActiveParent()) {
-            return;
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
+            return false;
         }
         $groupID = $this->ReadPropertyString('GroupID');
         if (empty($groupID)) {
-            return;
+            $this->SendDebug(__FUNCTION__, 'Abort, no group id is assigned!', 0);
+            return false;
         }
+        $success = false;
         $values = [];
         $data = [];
         $buffer = [];
@@ -156,42 +161,96 @@ class KlyqaGroup extends IPSModule
         $data = json_encode($data);
         $result = json_decode($this->SendDataToParent($data), true);
         $this->SendDebug(__FUNCTION__, 'Result: ' . json_encode($result), 0);
-        if (array_key_exists('httpCode', $result)) {
-            $httpCode = $result['httpCode'];
-            $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
-            if ($httpCode != 200) {
-                $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
-                return;
+        if (is_array($result)) {
+            if (array_key_exists('httpCode', $result)) {
+                $httpCode = $result['httpCode'];
+                if ($httpCode == 200) {
+                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                } else {
+                    $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
+                    return false;
+                }
             }
-        }
-        if (array_key_exists('body', $result)) {
-            $this->SendDebug(__FUNCTION__, 'Actual data: ' . json_encode($result['body']), 0);
-            $data = $result['body'];
-            if (is_array($data)) {
-                //Rooms
-                if (array_key_exists('rooms', $data)) {
-                    $rooms = $data['rooms'];
-                    if (is_array($rooms)) {
-                        foreach ($rooms as $room) {
-                            if (array_key_exists('id', $room)) {
-                                $roomID = $room['id'];
-                                if ($roomID == $groupID) {
-                                    if (array_key_exists('devices', $room)) {
-                                        $roomDevices = $room['devices'];
-                                        if (is_array($roomDevices)) {
-                                            foreach ($roomDevices as $roomDevice) {
-                                                if (array_key_exists('cloudDeviceId', $roomDevice)) {
-                                                    $roomDeviceID = $roomDevice['cloudDeviceId'];
-                                                    if (array_key_exists('devices', $data)) {
-                                                        $devices = $data['devices'];
-                                                        if (is_array($devices)) {
-                                                            foreach ($devices as $device) {
-                                                                if (array_key_exists('cloudDeviceId', $device)) {
-                                                                    $deviceID = $device['cloudDeviceId'];
-                                                                    if ($deviceID == $roomDeviceID) {
-                                                                        if (array_key_exists('name', $device)) {
-                                                                            $name = $device['name'];
-                                                                            array_push($values, ['CloudDeviceID' => (string) $roomDeviceID, 'Name' => (string) $name]);
+            if (array_key_exists('body', $result)) {
+                $this->SendDebug(__FUNCTION__, 'Result body data: ' . json_encode($result['body']), 0);
+                $data = $result['body'];
+                if (is_array($data)) {
+                    //Rooms
+                    if (array_key_exists('rooms', $data)) {
+                        $rooms = $data['rooms'];
+                        if (is_array($rooms)) {
+                            foreach ($rooms as $room) {
+                                if (array_key_exists('id', $room)) {
+                                    $roomID = $room['id'];
+                                    if ($roomID == $groupID) {
+                                        if (array_key_exists('devices', $room)) {
+                                            $roomDevices = $room['devices'];
+                                            if (is_array($roomDevices)) {
+                                                foreach ($roomDevices as $roomDevice) {
+                                                    if (array_key_exists('cloudDeviceId', $roomDevice)) {
+                                                        $roomDeviceID = $roomDevice['cloudDeviceId'];
+                                                        if (array_key_exists('devices', $data)) {
+                                                            $devices = $data['devices'];
+                                                            if (is_array($devices)) {
+                                                                foreach ($devices as $device) {
+                                                                    if (array_key_exists('cloudDeviceId', $device)) {
+                                                                        $deviceID = $device['cloudDeviceId'];
+                                                                        if ($deviceID == $roomDeviceID) {
+                                                                            $success = true;
+                                                                            $name = 'Unknown';
+                                                                            if (array_key_exists('name', $device)) {
+                                                                                $name = $device['name'];
+                                                                            }
+                                                                            $productID = 'Unknown';
+                                                                            if (array_key_exists('productId', $device)) {
+                                                                                $productID = $device['productId'];
+                                                                            }
+                                                                            array_push($values, ['CloudDeviceID' => (string) $roomDeviceID, 'Name' => (string) $name, 'ProductID' => (string) $productID]);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    //Groups
+                    if (array_key_exists('deviceGroups', $data)) {
+                        $groups = $data['deviceGroups'];
+                        if (is_array($groups)) {
+                            foreach ($groups as $group) {
+                                if (array_key_exists('id', $group)) {
+                                    $deviceGroupID = $group['id'];
+                                    if ($deviceGroupID == $groupID) {
+                                        if (array_key_exists('devices', $group)) {
+                                            $groupDevices = $group['devices'];
+                                            if (is_array($groupDevices)) {
+                                                foreach ($groupDevices as $groupDevice) {
+                                                    if (array_key_exists('cloudDeviceId', $groupDevice)) {
+                                                        $groupDeviceID = $groupDevice['cloudDeviceId'];
+                                                        if (array_key_exists('devices', $data)) {
+                                                            $devices = $data['devices'];
+                                                            if (is_array($devices)) {
+                                                                foreach ($devices as $device) {
+                                                                    if (array_key_exists('cloudDeviceId', $device)) {
+                                                                        $deviceID = $device['cloudDeviceId'];
+                                                                        if ($deviceID == $groupDeviceID) {
+                                                                            $success = true;
+                                                                            $name = 'Unknown';
+                                                                            if (array_key_exists('name', $device)) {
+                                                                                $name = $device['name'];
+                                                                            }
+                                                                            $productID = 'Unknown';
+                                                                            if (array_key_exists('productId', $device)) {
+                                                                                $productID = $device['productId'];
+                                                                            }
+                                                                            array_push($values, ['CloudDeviceID' => (string) $groupDeviceID, 'Name' => (string) $name, 'ProductID' => (string) $productID]);
                                                                         }
                                                                     }
                                                                 }
@@ -207,70 +266,111 @@ class KlyqaGroup extends IPSModule
                         }
                     }
                 }
-                //Groups
-                if (array_key_exists('deviceGroups', $data)) {
-                    $groups = $data['deviceGroups'];
-                    if (is_array($groups)) {
-                        foreach ($groups as $group) {
-                            if (array_key_exists('id', $group)) {
-                                $deviceGroupID = $group['id'];
-                                if ($deviceGroupID == $groupID) {
-                                    if (array_key_exists('devices', $group)) {
-                                        $groupDevices = $group['devices'];
-                                        if (is_array($groupDevices)) {
-                                            foreach ($groupDevices as $groupDevice) {
-                                                if (array_key_exists('cloudDeviceId', $groupDevice)) {
-                                                    $groupDeviceID = $groupDevice['cloudDeviceId'];
-                                                    if (array_key_exists('devices', $data)) {
-                                                        $devices = $data['devices'];
-                                                        if (is_array($devices)) {
-                                                            foreach ($devices as $device) {
-                                                                if (array_key_exists('cloudDeviceId', $device)) {
-                                                                    $deviceID = $device['cloudDeviceId'];
-                                                                    if ($deviceID == $groupDeviceID) {
-                                                                        if (array_key_exists('name', $device)) {
-                                                                            $name = $device['name'];
-                                                                            array_push($values, ['CloudDeviceID' => (string) $groupDeviceID, 'Name' => (string) $name]);
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                @IPS_SetProperty($this->InstanceID, 'Devices', json_encode($values));
+                if (@IPS_HasChanges($this->InstanceID)) {
+                    @IPS_ApplyChanges($this->InstanceID);
                 }
             }
-            @IPS_SetProperty($this->InstanceID, 'Devices', json_encode($values));
-            if (@IPS_HasChanges($this->InstanceID)) {
-                @IPS_ApplyChanges($this->InstanceID);
-            }
         }
+        return $success;
     }
 
-    public function UpdateGroupState(): void
+    public function DetermineSwitchingProfile(): bool
     {
         if (!$this->HasActiveParent()) {
-            $this->SendDebug(__FUNCTION__, 'Parent splitter instance is inactive!', 0);
-            $this->SetUpdateTimer();
-            return;
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
+            return false;
         }
         $devices = json_decode($this->ReadPropertyString('Devices'), true);
         if (empty($devices)) {
+            $this->SendDebug(__FUNCTION__, 'Abort, no devices are assigned!', 0);
+            $this->WriteAttributeInteger('SwitchingProfile', 0);
+            $this->UpdateFormField('SwitchingProfileDescription', 'caption', $this->Translate('Switching profile: ') . $this->GetSwitchingProfileDescription());
+            return false;
+        }
+        $success = false;
+        $switchingProfile = 0; # Undefined
+        $products['Whitetone'] = false;
+        $products['RGB Color'] = false;
+        $data = [];
+        $buffer = [];
+        $data['DataID'] = self::KLYQA_SPLITTER_DATA_GUID;
+        $buffer['Command'] = 'GetDeviceList';
+        $buffer['Params'] = '';
+        $data['Buffer'] = $buffer;
+        $data = json_encode($data);
+        $result = json_decode($this->SendDataToParent($data), true);
+        $this->SendDebug(__FUNCTION__, 'Result: ' . json_encode($result), 0);
+        if (is_array($result)) {
+            if (array_key_exists('httpCode', $result)) {
+                $httpCode = $result['httpCode'];
+                if ($httpCode == 200) {
+                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                } else {
+                    $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
+                    return false;
+                }
+            }
+            if (array_key_exists('body', $result)) {
+                $this->SendDebug(__FUNCTION__, 'Result body data: ' . json_encode($result['body']), 0);
+                $existingDevices = $result['body'];
+                if (is_array($existingDevices)) {
+                    foreach ($devices as $device) {
+                        foreach ($existingDevices as $existingDevice) {
+                            if (array_key_exists('cloudDeviceId', $existingDevice)) {
+                                if ($device['CloudDeviceID'] == $existingDevice['cloudDeviceId']) {
+                                    $success = true;
+                                    if (array_key_exists('productId', $existingDevice)) {
+                                        switch ($existingDevice['productId']) {
+                                            case '@klyqa.lighting.cw-ww.e27':
+                                                $products['Whitetone'] = true;
+                                                break;
+
+                                            case '@klyqa.lighting.rgb-cw-ww.e27':
+                                                $products['RGB Color'] = true;
+                                            break;
+
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if ($products['RGB Color'] && !$products['Whitetone']) {
+            $switchingProfile = 2; # RGB color
+        }
+        if ($products['Whitetone'] && !$products['RGB Color']) {
+            $switchingProfile = 1; # Whitetone
+        }
+        if ($products['RGB Color'] && $products['Whitetone']) {
+            $switchingProfile = 1; # Whitetone
+        }
+        $this->WriteAttributeInteger('SwitchingProfile', $switchingProfile);
+        $this->UpdateFormField('SwitchingProfileDescription', 'caption', $this->Translate('Switching profile: ') . $this->GetSwitchingProfileDescription());
+        return $success;
+    }
+
+    public function UpdateGroupState(): bool
+    {
+        if (!$this->HasActiveParent()) {
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
             $this->SetUpdateTimer();
-            return;
+            return false;
+        }
+        $devices = json_decode($this->ReadPropertyString('Devices'), true);
+        if (empty($devices)) {
+            $this->SendDebug(__FUNCTION__, 'Abort, no devices are assigned!', 0);
+            $this->SetUpdateTimer();
+            return false;
         }
         $this->SetTimerInterval('UpdateGroupState', 0);
+        $success = false;
         if (is_array($devices)) {
             $groupPowerState = false;
             $groupBrightness = [];
-            $success = false;
             foreach ($devices as $device) {
                 if (array_key_exists('CloudDeviceID', $device)) {
                     $cloudDeviceID = $device['CloudDeviceID'];
@@ -283,19 +383,20 @@ class KlyqaGroup extends IPSModule
                         $data['Buffer'] = $buffer;
                         $data = json_encode($data);
                         $result = json_decode($this->SendDataToParent($data), true);
+                        $this->SendDebug(__FUNCTION__, 'Result: ' . json_encode($result), 0);
                         if (is_array($result)) {
                             if (array_key_exists('httpCode', $result)) {
                                 $httpCode = $result['httpCode'];
-                                $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
-                                if ($httpCode != 200) {
+                                if ($httpCode == 200) {
+                                    $success = true;
+                                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                                } else {
                                     $this->SendDebug(__FUNCTION__, 'Continue, result http code: ' . $httpCode . ', must be 200!', 0);
                                     continue;
-                                } else {
-                                    $success = true;
                                 }
                             }
                             if (array_key_exists('body', $result)) {
-                                $this->SendDebug(__FUNCTION__, 'Actual data: ' . json_encode($result['body']), 0);
+                                $this->SendDebug(__FUNCTION__, 'Body data: ' . json_encode($result['body']), 0);
                                 $deviceData = $result['body'];
                                 if (is_array($deviceData)) {
                                     //Status
@@ -330,12 +431,18 @@ class KlyqaGroup extends IPSModule
             }
         }
         $this->SetUpdateTimer();
+        return $success;
     }
 
     public function ToggleGroupPower(bool $State): bool
     {
         if (!$this->HasActiveParent()) {
-            $this->SendDebug(__FUNCTION__, 'Parent splitter instance is inactive!', 0);
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
+            return false;
+        }
+        $devices = json_decode($this->ReadPropertyString('Devices'), true);
+        if (empty($devices)) {
+            $this->SendDebug(__FUNCTION__, 'Abort, no devices are assigned!', 0);
             return false;
         }
         $this->SetTimerInterval('UpdateGroupState', 0);
@@ -346,11 +453,6 @@ class KlyqaGroup extends IPSModule
             $powerState = 'on';
         }
         $payload = [];
-        $devices = json_decode($this->ReadPropertyString('Devices'), true);
-        if (empty($devices)) {
-            $this->SetTimerInterval('UpdateGroupState', 5000);
-            return false;
-        }
         if (is_array($devices)) {
             foreach ($devices as $device) {
                 if (array_key_exists('CloudDeviceID', $device)) {
@@ -370,38 +472,40 @@ class KlyqaGroup extends IPSModule
         $data['Buffer'] = $buffer;
         $data = json_encode($data);
         $result = json_decode($this->SendDataToParent($data), true);
+        $this->SendDebug(__FUNCTION__, 'Result: ' . json_encode($result), 0);
         if (is_array($result)) {
             if (array_key_exists('httpCode', $result)) {
                 $httpCode = $result['httpCode'];
-                $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
-                if ($httpCode != 200) {
+                if ($httpCode == 200) {
+                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                } else {
                     $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
-                    $this->SetTimerInterval('UpdateGroupState', 5000);
                     //Revert
                     $this->SetValue('GroupPower', $actualState);
+                    $this->SetTimerInterval('UpdateGroupState', 5000);
                     return false;
                 }
             }
         }
-        $this->SetTimerInterval('UpdateGroupState', 5000);
+        $this->SetUpdateTimer();
         return $success;
     }
 
-    public function ToggleBrightness(int $Percentage): bool
+    public function ToggleGroupBrightness(int $Percentage): bool
     {
         if (!$this->HasActiveParent()) {
-            $this->SendDebug(__FUNCTION__, 'Parent splitter instance is inactive!', 0);
+            $this->SendDebug(__FUNCTION__, 'Abort, parent splitter instance is inactive!', 0);
+            return false;
+        }
+        $devices = json_decode($this->ReadPropertyString('Devices'), true);
+        if (empty($devices)) {
+            $this->SendDebug(__FUNCTION__, 'Abort, no devices are assigned!', 0);
             return false;
         }
         $this->SetTimerInterval('UpdateGroupState', 0);
         $actualPercentage = $this->GetValue('Brightness');
         $this->SetValue('Brightness', $Percentage);
         $payload = [];
-        $devices = json_decode($this->ReadPropertyString('Devices'), true);
-        if (empty($devices)) {
-            $this->SetTimerInterval('UpdateGroupState', 5000);
-            return false;
-        }
         if (is_array($devices)) {
             foreach ($devices as $device) {
                 if (array_key_exists('CloudDeviceID', $device)) {
@@ -424,12 +528,13 @@ class KlyqaGroup extends IPSModule
         if (is_array($result)) {
             if (array_key_exists('httpCode', $result)) {
                 $httpCode = $result['httpCode'];
-                $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
-                if ($httpCode != 200) {
+                if ($httpCode == 200) {
+                    $this->SendDebug(__FUNCTION__, 'Result http code: ' . $httpCode, 0);
+                } else {
                     $this->SendDebug(__FUNCTION__, 'Abort, result http code: ' . $httpCode . ', must be 200!', 0);
-                    $this->SetTimerInterval('UpdateGroupState', 5000);
                     //Revert
                     $this->SetValue('Brightness', $actualPercentage);
+                    $this->SetTimerInterval('UpdateGroupState', 5000);
                     return false;
                 }
             }
@@ -456,5 +561,22 @@ class KlyqaGroup extends IPSModule
     private function SetUpdateTimer(): void
     {
         $this->SetTimerInterval('UpdateGroupState', $this->ReadPropertyInteger('UpdateInterval') * 1000);
+    }
+
+    private function GetSwitchingProfileDescription(): string
+    {
+        switch ($this->ReadAttributeInteger('SwitchingProfile')) {
+            case 1:
+                $description = 'CW-WW';
+                break;
+
+            case 2:
+                $description = 'RGB-CW-WW';
+                break;
+
+            default:
+                $description = $this->Translate('Unknown');
+        }
+        return $description;
     }
 }

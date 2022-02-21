@@ -4,15 +4,15 @@
       "Klyqa Group": "Klyqa Gruppe",
       "Group ID": "Gruppen ID",
       "Group Name": "Gruppenname",
-      "Switching profile": "Schaltprofil",
-      "Please select": "Bitte auswählen",
       "Update interval": "Aktualisierungsintervall",
       "seconds": "Sekunden",
       "Devices": "Geräte",
       "Cloud Device ID": "Cloud Geräte ID",
-      "Type": "Typ",
+      "Product ID": "Produkt ID",
+      "Switching profile: ":  "Schaltprofil: ",
       "Developer area": "Entwicklerbereich",
       "Get Group Devices": "Gruppengeräte ermitteln",
+      "Identify switching profile": "Schaltprofil ermitteln",
       "Update Group State": "Gruppenstatus aktualisieren",
       "Klyqa Group will be created": "Klyqa Gruppe wird erstellt",
       "Klyqa Group is active": "Klyqa Gruppe ist aktiv",
@@ -20,7 +20,8 @@
       "Klyqa Group is inactive": "Klyqa Gruppe ist inaktiv",
       "An error has occurred, for further information see messages, log file or debug!": "Es ist Fehler aufgetreten, weitere Informationen unter Meldungen, im Log oder Debug!",
       "Lights": "Lampen",
-      "Brightness": "Helligkeit"
+      "Brightness": "Helligkeit",
+      "Unknown": "Unbekannt"
     }
   }
 }
