@@ -197,8 +197,7 @@ class KlyqaConfigurator extends IPSModule
                                     'name'          => $name . ' (Klyqa ' . $this->Translate('Room') . ')',
                                     'configuration' => [
                                         'GroupID'          => (string) $groupID,
-                                        'GroupName'        => (string) $name,
-                                        'SwitchingProfile' => 0
+                                        'GroupName'        => (string) $name
                                     ],
                                     'location' => $location
                                 ]
@@ -232,8 +231,7 @@ class KlyqaConfigurator extends IPSModule
                                     'name'          => $name . ' (Klyqa ' . $this->Translate('Group') . ')',
                                     'configuration' => [
                                         'GroupID'          => (string) $groupID,
-                                        'GroupName'        => (string) $name,
-                                        'SwitchingProfile' => 0
+                                        'GroupName'        => (string) $name
                                     ],
                                     'location' => $location
                                 ]
