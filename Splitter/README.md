@@ -2,6 +2,8 @@
 
 ### Splitter
 
+Dieses Modul stellt die Kommunikation mit dem Klyqa Server her.  
+
 Für dieses Modul besteht kein Anspruch auf Fehlerfreiheit, Weiterentwicklung, sonstige Unterstützung oder Support.  
 Bevor das Modul installiert wird, sollte unbedingt ein Backup von IP-Symcon durchgeführt werden.  
 Der Entwickler haftet nicht für eventuell auftretende Datenverluste oder sonstige Schäden.  
@@ -40,6 +42,7 @@ __Konfigurationsseite__:
 
 Name            | Beschreibung
 --------------- | -----------------------------------------
+Aktiv           | Splitter Instanz in- / aktiv schalten
 E-Mail Adresse  | E-Mail Adresse (Klyqa Konto)
 Kennwort        | Kennwort (Klyqa Konto)
 Timeout         | Netzwerk Timeout
@@ -48,10 +51,12 @@ __Aktionsbereich__:
 
 Name                    | Beschreibung
 ----------------------- | ----------------------------------------------
+Token                   |
 Entwicklerbereich       |
 Access Token            | Access Token
 Access Token übernehmen | Access Token übernehmen
 Access Token löschen    | Access Token löschen
+Debug Tokens            | Debug Tokens
 
 __Vorgehensweise__:
 
