@@ -76,8 +76,7 @@ class KlyqaSplitter extends IPSModule
         //Version info
         $library = IPS_GetLibrary(self::LIBRARY_GUID);
         $formData['elements'][2]['caption'] = 'ID: ' . $this->InstanceID . ', Version: ' . $library['Version'] . '-' . $library['Build'] . ' vom ' . date('d.m.Y', $library['Date']);
-        $formData['actions'][0]['caption'] = $this->ReadAttributeString('AccountToken') ? 'Account token: ' . substr($this->ReadAttributeString('AccountToken'), 0, 16) . ' ...' : 'Account token: Not registered yet!';
-        $formData['actions'][1]['caption'] = $this->ReadAttributeString('AccessToken') ? 'Access token: ' . substr($this->ReadAttributeString('AccessToken'), 0, 16) . ' ...' : 'Access token: Not registered yet!';
+        $formData['actions'][0]['caption'] = $this->ReadAttributeString('AccessToken') ? 'Token: ' . substr($this->ReadAttributeString('AccessToken'), 0, 16) . '...' : 'Token: Not registered yet!';
         return json_encode($formData);
     }
 
@@ -88,6 +87,10 @@ class KlyqaSplitter extends IPSModule
         switch ($data->Buffer->Command) {
             case 'GetSettings':
                 $response = $this->GetSettings();
+                break;
+
+            case 'GetDeviceList':
+                $response = $this->GetDeviceList();
                 break;
 
             case 'GetDeviceState':
@@ -111,6 +114,12 @@ class KlyqaSplitter extends IPSModule
         }
         $this->SendDebug(__FUNCTION__, $response, 0);
         return $response;
+    }
+
+    public function DebugTokens(): void
+    {
+        $this->SendDebug(__FUNCTION__, 'Account Token: ' . $this->ReadAttributeString('AccountToken'), 0);
+        $this->SendDebug(__FUNCTION__, 'Access Token: ' . $this->ReadAttributeString('AccessToken'), 0);
     }
 
     #################### Private

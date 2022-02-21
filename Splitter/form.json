@@ -47,13 +47,8 @@
   "actions": [
     {
       "type": "Label",
-      "name": "AccountToken",
-      "caption": "Account token:"
-    },
-    {
-      "type": "Label",
       "name": "AccessToken",
-      "caption": "Access token:"
+      "caption": "Token: "
     },
     {
       "type": "Label",
@@ -82,6 +77,11 @@
               "type": "Button",
               "caption": "Delete Access Token",
               "onClick": "KLYQA_DeleteAccessToken($id);"
+            },
+            {
+              "type": "Button",
+              "caption": "Debug Tokens",
+              "onClick": "KLYQA_DebugTokens($id);"
             }
           ]
         }

@@ -99,7 +99,6 @@ trait KlyqaAPI
                             if (!empty($accountToken)) {
                                 $this->SendDebug(__FUNCTION__, 'Account token: ' . $accountToken, 0);
                                 $this->WriteAttributeString('AccountToken', $accountToken);
-                                $this->UpdateFormField('AccountToken', 'caption', 'Account token: ' . substr($accountToken, 0, 16) . ' ...');
                             }
                         }
                         if (array_key_exists('accessToken', $data)) {
@@ -107,7 +106,7 @@ trait KlyqaAPI
                             if (!empty($accessToken)) {
                                 $this->SendDebug(__FUNCTION__, 'Access token: ' . $accessToken, 0);
                                 $this->WriteAttributeString('AccessToken', $accessToken);
-                                $this->UpdateFormField('AccessToken', 'caption', 'Access token: ' . substr($accessToken, 0, 16) . ' ...');
+                                $this->UpdateFormField('AccessToken', 'caption', 'Token: ' . substr($accessToken, 0, 16) . '...');
                             }
                         }
                     }
@@ -170,7 +169,10 @@ trait KlyqaAPI
                 case 200:  # OK
                     $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
                     $header = substr($response, 0, $header_size);
-                    $body = json_decode(substr($response, $header_size), true);
+                    $body = substr($response, $header_size);
+                    if (!empty($body)) {
+                        $body = json_decode($body, true);
+                    }
                     $this->SendDebug(__FUNCTION__, 'Response header: ' . $header, 0);
                     $this->SendDebug(__FUNCTION__, 'Response body: ' . json_encode($body), 0);
                     break;
